@@ -7,6 +7,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Poppins:wght@300;400;600&family=Parisienne&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script type="module">
         import { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } from 'https://cdn.skypack.dev/ogl';
         window.OGL = { Camera, Mesh, Plane, Program, Renderer, Texture, Transform };
@@ -48,10 +49,32 @@
             color: var(--text-color);
         }
 
-        .circular-gallery-container {
-            width: 100%; height: 60vh; position: relative; cursor: grab; overflow: hidden; margin: 40px 0;
+        /* --- BOUNCE CARDS STYLES --- */
+        .bounceCardsContainer {
+            position: relative;
+            width: 400px;
+            height: 400px;
+            margin: 50px auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        .circular-gallery-container:active { cursor: grabbing; }
+        .card {
+            position: absolute;
+            width: 150px;
+            height: 200px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+            overflow: hidden;
+            cursor: pointer;
+            border: 4px solid white;
+        }
+        .card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
 
         #music-player {
             position: fixed; bottom: 20px; left: 20px; z-index: 10000;
@@ -80,9 +103,10 @@
             background: linear-gradient(135deg, #ffafbd, #ffc3a0);
             z-index: 12000; display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-        .lock-box { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        #passInput { padding: 15px; border-radius: 15px; border: 2px solid var(--accent); font-size: 1.1rem; text-align: center; outline: none; margin-bottom: 20px; background: white; color: #333; }
+        .lock-box { background: white; padding: 40px; border-radius: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); max-width: 400px; width: 90%; }
+        #passInput { padding: 15px; border-radius: 15px; border: 2px solid var(--accent); font-size: 1.1rem; text-align: center; outline: none; margin-bottom: 20px; background: white; color: #333; width: 100%; }
         .unlock-btn { padding: 12px 40px; border-radius: 50px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; }
+        .hint-text { font-size: 0.85rem; color: #888; margin-top: 15px; font-style: italic; cursor: help; }
 
         .love-map {
             display: flex; align-items: center; justify-content: center; gap: 20px;
@@ -107,12 +131,13 @@
 
         #success-msg { 
             display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            background: white; padding: 30px; border-radius: 30px; z-index: 11000; 
-            color: #444; width: 90%; max-width: 450px; box-shadow: 0 0 100px rgba(0,0,0,0.6); 
+            background: white; padding: 40px; border-radius: 30px; z-index: 11000; 
+            color: #444; width: 95%; max-width: 500px; box-shadow: 0 0 100px rgba(0,0,0,0.6); 
         }
         #secret-text { 
-            display: none; font-family: 'Parisienne', cursive; font-size: 1.6rem; color: #5d4037; 
+            display: none; font-family: 'Parisienne', cursive; font-size: 1.5rem; color: #5d4037; 
             border-bottom: 2px solid #f8d7da; margin-bottom: 15px; padding-bottom: 15px; 
+            line-height: 1.4; text-align: left;
         }
         .heart-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: -1; }
     </style>
@@ -130,10 +155,11 @@
 
     <div id="lock-screen">
         <div class="lock-box">
-            <h2 style="font-family: 'Dancing Script'; margin-bottom: 15px;">Unlock Your Heart ❤️</h2>
-            <input type="password" id="passInput" placeholder="Enter Code...">
-            <br>
-            <button class="unlock-btn" onclick="checkPass()">Enter</button>
+            <h2 style="font-family: 'Dancing Script'; margin-bottom: 15px; font-size: 2rem; color: var(--accent);">Our Secret Key ❤️</h2>
+            <p style="margin-bottom: 20px; font-weight: 600; color: #555;">When did the stars finally decide that 'You' and 'I' should become 'Us'?</p>
+            <input type="text" id="passInput" placeholder="Answer (e.g. Month Day)...">
+            <button class="unlock-btn" onclick="checkPass()">Unlock My Heart</button>
+            <p class="hint-text" onclick="alert('Confusing Hint: It\'s the day the summer starts to cry because it knows the unlucky number is coming...')">Need a hint?</p>
         </div>
     </div>
 
@@ -155,9 +181,9 @@
         <p id="reasonText" style="margin-top: 30px; font-style: italic;">Every heartbeat is for you...</p>
     </section>
 
-    <section id="section-circular-gallery">
-        <h2 style="font-family: 'Dancing Script'; font-size: 2.5rem; margin-bottom: -20px;">Scroll our memories...</h2>
-        <div id="gallery-root" class="circular-gallery-container"></div>
+    <section id="section-bounce-cards">
+        <h2 style="font-family: 'Dancing Script'; font-size: 2.5rem; margin-bottom: 20px;">Our Little Moments...</h2>
+        <div id="bounce-root"></div>
     </section>
 
     <section id="section-ask">
@@ -175,117 +201,100 @@
 
     <div id="success-msg">
         <div id="secret-text">
-            "My Darling,<br>You are the most beautiful part of my life. Distance is just a test of how far love can travel. Thank you for being mine."
+            "To My Most Favorite Person,<br><br>
+            From the moment our stars aligned on <b>September 13th</b>, my world has been brighter, warmer, and infinitely more beautiful. <br><br>
+            They say distance is measured in miles, but I measure it in heartbeats—and every single one of mine belongs to you. You are the laugh that fills my silence and the peace in my busiest days. <br><br>
+            Thank you for choosing me, for loving me, and for being the most incredible chapter of my life. No matter how many days pass or how many miles lie between our cities, it will always be you.<br><br>
+            Happy Valentine's Day, my love. Forever isn't long enough."
         </div>
         <h2 id="success-title" style="font-family: 'Dancing Script'; font-size: 3rem; color: #8b0000;">I Knew It! ❤️</h2>
         <p id="success-sub">You've made me the happiest person alive.</p>
-        <button onclick="document.getElementById('success-msg').style.display='none'" style="margin-top:15px; border:none; background:none; color:gray; cursor:pointer; font-weight:bold;">Close & Explore</button>
+        <button onclick="document.getElementById('success-msg').style.display='none'" style="margin-top:20px; border:none; background:none; color:gray; cursor:pointer; font-weight:bold; font-size: 1rem;">Close & Explore</button>
     </div>
 
     <script type="module">
-        function lerp(p1, p2, t) { return p1 + (p2 - p1) * t; }
-        
-        class CircularGallery {
-            constructor(container, options) {
-                const { Camera, Mesh, Plane, Program, Renderer, Texture, Transform } = window.OGL;
-                this.container = container;
-                this.items = options.items || [];
-                this.bend = options.bend || 3;
-                this.scroll = { ease: 0.05, current: 0, target: 0, last: 0 };
-                this.renderer = new Renderer({ alpha: true, antialias: true });
-                this.gl = this.renderer.gl;
-                this.container.appendChild(this.gl.canvas);
-                this.camera = new Camera(this.gl);
-                this.camera.position.z = 20;
-                this.scene = new Transform();
-                this.onResize();
-                this.createGeometry();
-                this.createMedias();
-                this.addEvents();
-                this.update();
-            }
-            createGeometry() { this.planeGeometry = new window.OGL.Plane(this.gl, { heightSegments: 50, widthSegments: 100 }); }
-            createMedias() {
-                const galleryItems = this.items.concat(this.items);
-                this.medias = galleryItems.map((data, index) => {
-                    const texture = new window.OGL.Texture(this.gl, { generateMipmaps: true });
-                    const img = new Image();
-                    img.crossOrigin = "anonymous";
-                    img.src = data.image;
-                    img.onload = () => { texture.image = img; program.uniforms.uImageSizes.value = [img.naturalWidth, img.naturalHeight]; };
-                    const program = new window.OGL.Program(this.gl, {
-                        vertex: `attribute vec3 position; attribute vec2 uv; uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; uniform float uTime; uniform float uSpeed; varying vec2 vUv; void main() { vUv = uv; vec3 p = position; p.z = (sin(p.x * 4.0 + uTime) * 1.5 + cos(p.y * 2.0 + uTime) * 1.5) * (0.1 + uSpeed * 0.5); gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }`,
-                        fragment: `precision highp float; uniform vec2 uImageSizes; uniform vec2 uPlaneSizes; uniform sampler2D tMap; varying vec2 vUv; void main() { vec2 ratio = vec2(min((uPlaneSizes.x / uPlaneSizes.y) / (uImageSizes.x / uImageSizes.y), 1.0), min((uPlaneSizes.y / uPlaneSizes.x) / (uImageSizes.y / uImageSizes.x), 1.0)); vec2 uv = vec2(vUv.x * ratio.x + (1.0 - ratio.x) * 0.5, vUv.y * ratio.y + (1.0 - ratio.y) * 0.5); gl_FragColor = texture2D(tMap, uv); }`,
-                        uniforms: { tMap: { value: texture }, uPlaneSizes: { value: [0, 0] }, uImageSizes: { value: [0, 0] }, uSpeed: { value: 0 }, uTime: { value: Math.random() * 100 } },
-                        transparent: true
-                    });
-                    const plane = new window.OGL.Mesh(this.gl, { geometry: this.planeGeometry, program });
-                    plane.setParent(this.scene);
-                    return { plane, program, index, length: galleryItems.length, x: 0, extra: 0 };
-                });
-                this.layout();
-            }
-            layout() {
-                this.medias.forEach((m, i) => {
-                    const scale = this.screen.height / 1500;
-                    m.plane.scale.y = (this.viewport.height * (700 * scale)) / this.screen.height;
-                    m.plane.scale.x = (this.viewport.width * (500 * scale)) / this.screen.width;
-                    m.program.uniforms.uPlaneSizes.value = [m.plane.scale.x, m.plane.scale.y];
-                    m.width = m.plane.scale.x + 2;
-                    m.widthTotal = m.width * m.length;
-                    m.x = m.width * i;
-                });
-            }
-            onResize() {
-                this.screen = { width: this.container.clientWidth, height: this.container.clientHeight };
-                this.renderer.setSize(this.screen.width, this.screen.height);
-                this.camera.perspective({ aspect: this.gl.canvas.width / this.gl.canvas.height });
-                const fov = (this.camera.fov * Math.PI) / 180;
-                const h = 2 * Math.tan(fov / 2) * this.camera.position.z;
-                this.viewport = { width: h * this.camera.aspect, height: h };
-                if (this.medias) this.layout();
-            }
-            update() {
-                this.scroll.current = lerp(this.scroll.current, this.scroll.target, this.scroll.ease);
-                const direction = this.scroll.current > this.scroll.last ? 'right' : 'left';
-                this.medias.forEach(m => {
-                    m.plane.position.x = m.x - this.scroll.current - m.extra;
-                    const x = m.plane.position.x;
-                    const H = this.viewport.width / 2;
-                    const B = Math.abs(this.bend);
-                    const R = (H*H + B*B)/(2*B);
-                    const effX = Math.min(Math.abs(x), H);
-                    const arc = R - Math.sqrt(R*R - effX*effX);
-                    m.plane.position.y = (this.bend > 0) ? -arc : arc;
-                    m.plane.rotation.z = (this.bend > 0) ? -Math.sign(x) * Math.asin(effX/R) : Math.sign(x) * Math.asin(effX/R);
-                    m.program.uniforms.uTime.value += 0.02;
-                    m.program.uniforms.uSpeed.value = this.scroll.current - this.scroll.last;
-                    if (direction === 'right' && x + m.plane.scale.x/2 < -this.viewport.width/2) m.extra -= m.widthTotal;
-                    if (direction === 'left' && x - m.plane.scale.x/2 > this.viewport.width/2) m.extra += m.widthTotal;
-                });
-                this.renderer.render({ scene: this.scene, camera: this.camera });
-                this.scroll.last = this.scroll.current;
-                requestAnimationFrame(this.update.bind(this));
-            }
-            addEvents() {
-                window.addEventListener('resize', this.onResize.bind(this));
-                let isDown = false, startX = 0;
-                this.container.addEventListener('mousedown', e => { isDown = true; startX = e.clientX; });
-                window.addEventListener('mousemove', e => { if(!isDown) return; this.scroll.target += (startX - e.clientX) * 0.05; startX = e.clientX; });
-                window.addEventListener('mouseup', () => isDown = false);
-                this.container.addEventListener('wheel', e => this.scroll.target += e.deltaY * 0.05);
-            }
+        // --- BOUNCE CARDS LOGIC ---
+        const images = [
+            'https://picsum.photos/seed/a/400/600',
+            'https://picsum.photos/seed/b/400/600',
+            'https://picsum.photos/seed/c/400/600',
+            'https://picsum.photos/seed/d/400/600',
+            'https://picsum.photos/seed/e/400/600'
+        ];
+
+        const transformStyles = [
+            'rotate(10deg) translate(-170px)',
+            'rotate(5deg) translate(-85px)',
+            'rotate(-3deg)',
+            'rotate(-10deg) translate(85px)',
+            'rotate(2deg) translate(170px)'
+        ];
+
+        function initBounceCards() {
+            const root = document.getElementById('bounce-root');
+            const container = document.createElement('div');
+            container.className = 'bounceCardsContainer';
+            
+            images.forEach((src, idx) => {
+                const card = document.createElement('div');
+                card.className = `card card-${idx}`;
+                card.style.transform = transformStyles[idx];
+                card.innerHTML = `<img src="${src}" alt="memory">`;
+                
+                card.addEventListener('mouseenter', () => pushSiblings(idx));
+                card.addEventListener('mouseleave', resetSiblings);
+                
+                container.appendChild(card);
+            });
+            
+            root.appendChild(container);
+
+            gsap.fromTo('.card', 
+                { scale: 0 }, 
+                { scale: 1, stagger: 0.06, ease: 'elastic.out(1, 0.8)', delay: 0.5 }
+            );
         }
 
-        // Initialize Site
+        const getNoRotationTransform = transformStr => {
+            return transformStr.replace(/rotate\([\s\S]*?\)/, 'rotate(0deg)') || 'rotate(0deg)';
+        };
+
+        const getPushedTransform = (baseTransform, offsetX) => {
+            const translateRegex = /translate\(([-0-9.]+)px\)/;
+            const match = baseTransform.match(translateRegex);
+            if (match) {
+                return baseTransform.replace(translateRegex, `translate(${parseFloat(match[1]) + offsetX}px)`);
+            }
+            return `${baseTransform} translate(${offsetX}px)`;
+        };
+
+        const pushSiblings = hoveredIdx => {
+            images.forEach((_, i) => {
+                const target = document.querySelector(`.card-${i}`);
+                const baseTransform = transformStyles[i] || 'none';
+                if (i === hoveredIdx) {
+                    gsap.to(target, { transform: getNoRotationTransform(baseTransform), duration: 0.4, ease: 'back.out(1.4)', overwrite: 'auto' });
+                } else {
+                    const offsetX = i < hoveredIdx ? -160 : 160;
+                    gsap.to(target, { 
+                        transform: getPushedTransform(baseTransform, offsetX), 
+                        duration: 0.4, ease: 'back.out(1.4)', 
+                        delay: Math.abs(hoveredIdx - i) * 0.05, overwrite: 'auto' 
+                    });
+                }
+            });
+        };
+
+        const resetSiblings = () => {
+            images.forEach((_, i) => {
+                gsap.to(`.card-${i}`, { transform: transformStyles[i], duration: 0.4, ease: 'back.out(1.4)', overwrite: 'auto' });
+            });
+        };
+
+        // Initialize Everything
         window.addEventListener('load', () => {
-            const items = [
-                { image: 'https://picsum.photos/seed/a/800/1000', text: 'Love' },
-                { image: 'https://picsum.photos/seed/b/800/1000', text: 'US' },
-                { image: 'https://picsum.photos/seed/c/800/1000', text: 'Always' },
-                { image: 'https://picsum.photos/seed/d/800/1000', text: 'Forever' }
-            ];
-            new CircularGallery(document.getElementById('gallery-root'), { items, bend: 3 });
+            initBounceCards();
+            updateCounter();
         });
 
         // Theme Toggle
@@ -296,23 +305,25 @@
             document.getElementById('themeIcon').innerText = isLight ? '☀️' : '🌙';
         });
 
-        // Love Counter
+        // Love Counter (Updated to May 20, 2023)
         const startDate = new Date("2023-05-20"); 
         function updateCounter() {
             const now = new Date();
             const diffDays = Math.ceil(Math.abs(now - startDate) / (1000 * 60 * 60 * 24));
             document.getElementById('days-count').innerText = diffDays;
         }
-        updateCounter();
 
-        // Passcheck & Audio Prime
+        // Passcheck Updated to Question Logic
         window.checkPass = function() {
-            const pass = document.getElementById('passInput').value;
-            if(pass === "1234") {
+            const pass = document.getElementById('passInput').value.toLowerCase().trim();
+            // Answer: Sep 13
+            if(pass === "sep 13" || pass === "september 13") {
                 const song = document.getElementById('mySong');
                 song.play().then(() => { song.pause(); song.currentTime = 0; }).catch(() => {});
                 document.getElementById('lock-screen').style.display = 'none';
-            } else { alert("Try again, love! ❤️"); }
+            } else { 
+                alert("Incorrect! Think harder... the hint might help or hurt! ❤️"); 
+            }
         }
 
         // Acceptance Logic
