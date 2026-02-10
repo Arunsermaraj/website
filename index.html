@@ -142,6 +142,7 @@
             background: white; padding: 40px; border-radius: 30px; 
             box-shadow: 0 20px 60px rgba(255, 77, 109, 0.4); 
             max-width: 400px; width: 90%; position: relative; z-index: 2;
+            display: flex; flex-direction: column; align-items: center; /* Ensures content centers */
         }
         .lock-box::before {
             content: '❤️'; position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
@@ -152,14 +153,15 @@
         #calendarInput { 
             padding: 15px; border-radius: 15px; border: 2px solid var(--accent); 
             font-size: 1.1rem; text-align: center; outline: none; margin-bottom: 20px; 
-            background: white; color: #333; width: 100%;
+            background: white; color: #333; width: 100%; max-width: 280px; /* Constrained for mobile symmetry */
             box-shadow: 0 0 15px rgba(255, 77, 109, 0.1);
             cursor: pointer;
             font-family: 'Poppins', sans-serif;
+            display: block; margin-left: auto; margin-right: auto;
         }
         #calendarInput:focus { border-color: var(--blood-red); box-shadow: 0 0 20px rgba(255, 77, 109, 0.3); }
         
-        .unlock-btn { padding: 12px 40px; border-radius: 50px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; }
+        .unlock-btn { padding: 12px 40px; border-radius: 50px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; max-width: 280px; }
         .unlock-btn:hover { background: var(--heart-red); transform: scale(1.05); }
 
         .love-map {
@@ -386,7 +388,7 @@
                 song.play().catch(e => console.log("Autoplay blocked"));
                 document.getElementById('lock-screen').style.display = 'none';
             } else { 
-                alert("sorry ammu 😔 think again ❤️"); 
+                alert("Sorry Ammu 😔 try again ❤️"); 
             }
         }
 
